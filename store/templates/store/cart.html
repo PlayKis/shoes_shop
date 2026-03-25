@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Корзина</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background: #f9f9f9; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 15px; border-bottom: 1px solid #ddd; text-align: left; }
+        .total { font-size: 1.5em; text-align: right; margin-top: 20px; }
+        .back-link { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; }
+    </style>
+</head>
+<body>
+    <a href="{% url 'product_list' %}" class="back-link">← Вернуться к покупкам</a>
+    <h1>Ваша корзина</h1>
+
+    {% if cart_items %}
+    <table>
+        <thead>
+            <tr>
+                <th>Товар</th>
+                <th>Кол-во</th>
+                <th>Цена</th>
+                <th>Сумма</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart_items %}
+            <tr>
+                <td>{{ item.product.brand }} {{ item.product.title }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.product.price }} ₽</td>
+                <td>{{ item.item_total }} ₽</td>
+            </tr>
+            <td>
+                <a href="{% url 'remove_from_cart' item.product.id %}" style="color: red;">[ Удалить ]</a>
+            </td>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="total">Итого: <strong>{{ total_price }} ₽</strong></div>
+    {% else %}
+    <p>Корзина пока пуста.</p>
+    {% endif %}
+</body>
+</html>

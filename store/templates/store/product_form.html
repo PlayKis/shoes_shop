@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% if product %}Редактирование товара{% else %}Добавление товара{% endif %} | Shoes Shop</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .form-container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #4CAF50; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        textarea { height: 100px; }
+        .buttons { display: flex; gap: 10px; margin-top: 20px; }
+        button, .btn { flex: 1; padding: 12px; text-align: center; text-decoration: none; border-radius: 4px; cursor: pointer; border: none; font-size: 16px; }
+        .btn-save { background: #4CAF50; color: white; }
+        .btn-cancel { background: #9e9e9e; color: white; text-align: center; }
+        .error { color: red; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>{% if product %}Редактирование товара{% else %}Добавление товара{% endif %}</h2>
+        
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Артикул *</label>
+                <input type="text" name="sku" value="{{ product.sku|default:'' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Наименование товара *</label>
+                <input type="text" name="title" value="{{ product.title|default:'' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Категория товара</label>
+                <select name="category">
+                    <option value="">-- Выберите категорию --</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Описание товара</label>
+                <textarea name="description">{{ product.description|default:'' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Производитель</label>
+                <select name="brand">
+                    <option value="">-- Выберите производителя --</option>
+                    <option value="Nike" {% if product.brand == 'Nike' %}selected{% endif %}>Nike</option>
+                    <option value="Adidas" {% if product.brand == 'Adidas' %}selected{% endif %}>Adidas</option>
+                    <option value="Puma" {% if product.brand == 'Puma' %}selected{% endif %}>Puma</option>
+                    <option value="Reebok" {% if product.brand == 'Reebok' %}selected{% endif %}>Reebok</option>
+                    <option value="New Balance" {% if product.brand == 'New Balance' %}selected{% endif %}>New Balance</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Поставщик</label>
+                <select name="supplier">
+                    <option value="">-- Выберите поставщика --</option>
+                    {% for sup in suppliers %}
+                    <option value="{{ sup.id }}" {% if product.supplier_id == sup.id %}selected{% endif %}>{{ sup.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Цена (руб.) *</label>
+                <input type="number" name="price" step="0.01" min="0" value="{{ product.price|default:'' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Единица измерения</label>
+                <select name="unit">
+                    <option value="шт." {% if product.unit == 'шт.' %}selected{% endif %}>шт.</option>
+                    <option value="пара" {% if product.unit == 'пара' %}selected{% endif %}>пара</option>
+                    <option value="кг" {% if product.unit == 'кг' %}selected{% endif %}>кг</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Количество на складе *</label>
+                <input type="number" name="stock" min="0" value="{{ product.stock|default:'0' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Действующая скидка (%)</label>
+                <input type="number" name="discount" min="0" max="100" value="{{ product.discount|default:'0' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>Фото товара</label>
+                {% if product %}
+                <img src="{{ product.get_image_url }}" style="max-width: 200px; max-height: 150px; margin-bottom: 10px;">
+                {% else %}
+                <img src="/static/images/picture.png" style="max-width: 200px; max-height: 150px; margin-bottom: 10px;">
+                {% endif %}
+                <input type="file" name="image" accept="image/*">
+            </div>
+            
+            <div class="buttons">
+                <button type="submit" class="btn-save">Сохранить</button>
+                <a href="{% url 'product_list' %}" class="btn-cancel">Отмена</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

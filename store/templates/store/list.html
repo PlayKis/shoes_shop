@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Список товаров | Shoes Shop</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; margin: 0; }
+        .header { background: #76e383; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4CAF50; }
+        .container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
+        
+        /* Стили карточки по заданию */
+        .card { border: 1px solid #ccc; padding: 15px; display: flex; flex-direction: column; border-radius: 5px; transition: 0.3s; }
+        
+        /* Условие: если скидка > 15%, цвет фона #2E8B57 */
+        .high-discount { background-color: #2E8B57 !important; color: white; }
+        /* Условие: если товара нет на складе, фон голубой */
+        .out-of-stock { background-color: #ADD8E6 !important; }
+
+        .card img { width: 100%; height: 180px; object-fit: contain; margin-bottom: 10px; }
+        .price-old { text-decoration: line-through; color: red; margin-right: 10px; }
+        .price-new { font-weight: bold; color: black; font-size: 1.2em; }
+        .btn { background: #4CAF50; color: white; padding: 10px; text-align: center; text-decoration: none; border-radius: 4px; margin-top: auto; }
+        .btn-secondary { background: #2196F3; }
+        .btn-danger { background: #f44336; }
+        .user-panel { text-align: right; font-size: 0.9em; }
+        .toolbar { background: #f5f5f5; padding: 15px 30px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .toolbar input, .toolbar select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .actions { display: flex; gap: 10px; }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var searchInput = document.querySelector('input[name="search"]');
+            var categorySelect = document.querySelector('select[name="category"]');
+            var sortSelect = document.querySelector('select[name="sort"]');
+
+            function submitForm() {
+                var url = new URL(window.location.href);
+                url.searchParams.delete('page');
+                if (searchInput) {
+                    url.searchParams.set('search', searchInput.value);
+                }
+                if (categorySelect) {
+                    url.searchParams.set('category', categorySelect.value);
+                }
+                if (sortSelect) {
+                    url.searchParams.set('sort', sortSelect.value);
+                }
+                window.location.href = url.toString();
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(window.searchTimeout);
+                    window.searchTimeout = setTimeout(submitForm, 500);
+                });
+            }
+            if (categorySelect) {
+                categorySelect.addEventListener('change', submitForm);
+            }
+            if (sortSelect) {
+                sortSelect.addEventListener('change', submitForm);
+            }
+        });
+    </script>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">
+        <img src="/static/images/logo.png" alt="Logo" height="50"> <span style="font-size: 1.5em; font-weight: bold; margin-left: 10px;">Shoes Shop</span>
+    </div>
+    
+    <div class="user-panel">
+        {% if user.is_authenticated %}
+            <span>{{ user_full_name }}</span> | <a href="{% url 'logout' %}">Выход</a>
+        {% else %}
+            <span>Гость</span> | <a href="{% url 'login' %}">Войти</a> | <a href="{% url 'register' %}">Регистрация</a>
+        {% endif %}
+        <br>
+        <b>Товаров в корзине: {{ cart_count }}</b>
+    </div>
+</div>
+
+<div class="toolbar">
+    <form method="get" style="display: flex; gap: 10px; align-items: center;">
+        {% if user_role == 'manager' or user_role == 'admin' %}
+        <input type="text" name="search" placeholder="Поиск..." value="{{ search_query }}">
+        {% endif %}
+        <select name="category">
+            <option value="">Все категории</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}" {% if category_filter == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="sort">
+            {% if user_role == 'manager' or user_role == 'admin' %}
+            <option value="">Сортировка</option>
+            <option value="asc" {% if sort_by == 'asc' %}selected{% endif %}>По возрастанию остатка</option>
+            <option value="desc" {% if sort_by == 'desc' %}selected{% endif %}>По убыванию остатка</option>
+            {% endif %}
+        </select>
+        <button type="submit" style="display: none;">Применить</button>
+    </form>
+    {% if user_role == 'admin' %}
+    <a href="{% url 'product_create' %}" target="_blank" class="btn">Добавить товар</a>
+    {% endif %}
+    <a href="{% url 'order_list' %}" class="btn btn-secondary">Заказы</a>
+</div>
+
+<div class="container">
+    {% for product in products %}
+    <div class="card 
+        {% if product.discount > 15 %}high-discount{% endif %} 
+        {% if product.stock == 0 %}out-of-stock{% endif %}">
+        
+        <img src="{{ product.get_image_url }}" alt="{{ product.title }}">
+        
+        <div style="font-size: 0.8em; color: gray;">Арт: {{ product.sku }}</div>
+        <h3 style="margin: 5px 0;">{{ product.title }}</h3>
+        <p style="font-size: 0.9em; flex-grow: 1;">{{ product.description|truncatewords:15 }}</p>
+        
+        <div class="info">
+            <b>Производитель:</b> {{ product.brand }}<br>
+            <b>Категория:</b> {{ product.category_name }}<br>
+            <b>Поставщик:</b> {{ product.supplier_name }}<br>
+            <b>Остаток:</b> {{ product.stock }} {{ product.unit }}
+        </div>
+
+        <div class="price-area" style="margin: 10px 0;">
+            {% if product.discount > 0 %}
+                <span class="price-old">{{ product.price }} ₽</span>
+                <span class="price-new">{{ product.final_price|floatformat:2 }} ₽</span>
+                <div style="color: #ff4500; font-size: 0.8em;">Скидка: {{ product.discount }}%</div>
+            {% else %}
+                <span class="price-new" style="color: inherit;">{{ product.price }} ₽</span>
+            {% endif %}
+        </div>
+
+        {% if user_role == 'admin' %}
+        <div class="actions">
+            <a href="{% url 'product_edit' product.id %}" target="_blank" class="btn" style="flex: 1;">Редактировать</a>
+            <a href="{% url 'product_delete' product.id %}" class="btn btn-danger">Удалить</a>
+        </div>
+        {% elif product.stock > 0 %}
+            <a href="{% url 'add_to_cart' product.id %}" class="btn">В корзину</a>
+        {% else %}
+            <div style="text-align: center; color: #555;">Нет в наличии</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% if paginator.num_pages > 1 %}
+<div style="text-align: center; padding: 20px;">
+    {% if page_obj.has_previous %}
+    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="btn" style="padding: 8px 12px; display: inline-block;">&laquo; Первая</a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="btn" style="padding: 8px 12px; display: inline-block;">&lsaquo; Предыдущая</a>
+    {% endif %}
+    
+    <span style="padding: 8px 12px;">Страница {{ page_obj.number }} из {{ paginator.num_pages }}</span>
+    
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="btn" style="padding: 8px 12px; display: inline-block;">Следующая &rsaquo;</a>
+    <a href="?page={{ paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="btn" style="padding: 8px 12px; display: inline-block;">Последняя &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+</body>
+</html>

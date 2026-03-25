@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Заказы | Shoes Shop</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #fff; margin: 0; }
+        .header { background: #76e383; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4CAF50; }
+        .logo img { vertical-align: middle; }
+        .logo span { font-size: 1.5em; font-weight: bold; margin-left: 10px; }
+        .user-panel { text-align: right; }
+        table { width: 100%; border-collapse: collapse; padding: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background: #4CAF50; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .btn { padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px; }
+        .btn-primary { background: #4CAF50; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        .btn-secondary { background: #2196F3; color: white; }
+        .status-pending { color: orange; }
+        .status-processing { color: blue; }
+        .status-ready { color: green; }
+        .status-completed { color: #4CAF50; }
+        .status-cancelled { color: red; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <img src="/static/images/logo.png" alt="Logo" height="50"> 
+            <span>Shoes Shop</span>
+        </div>
+        <div class="user-panel">
+            <span>{{ user_full_name }}</span> | <a href="{% url 'logout' %}">Выход</a>
+        </div>
+    </div>
+
+    <h2 style="padding: 20px;">Список заказов</h2>
+    
+    <div style="padding: 0 20px;">
+        {% if user_role == 'admin' %}
+        <a href="{% url 'order_create' %}" target="_blank" class="btn btn-primary">Добавить заказ</a>
+        {% endif %}
+        <a href="{% url 'product_list' %}" class="btn btn-secondary">Назад к товарам</a>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Артикул</th>
+                <th>Товар</th>
+                <th>Количество</th>
+                <th>Сумма</th>
+                <th>Статус</th>
+                <th>Адрес пункта выдачи</th>
+                <th>Дата заказа</th>
+                <th>Дата выдачи</th>
+                <th>Покупатель</th>
+                {% if user_role == 'admin' %}
+                <th>Действия</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.id }}</td>
+                <td>{{ order.article|default:"-" }}</td>
+                <td>{{ order.product.title }}</td>
+                <td>{{ order.quantity }}</td>
+                <td>{{ order.total_price|floatformat:2 }} ₽</td>
+                <td class="status-{{ order.status }}">{{ order.get_status_display }}</td>
+                <td>{{ order.pickup_address }}</td>
+                <td>{{ order.order_date|date:"d.m.Y H:i" }}</td>
+                <td>{{ order.issue_date|date:"d.m.Y"|default:"-" }}</td>
+                <td>{{ order.customer|default:"Гость" }}</td>
+                {% if user_role == 'admin' %}
+                <td>
+                    <a href="{% url 'order_edit' order.id %}" target="_blank" class="btn btn-primary">Редактировать</a>
+                    <a href="{% url 'order_delete' order.id %}" class="btn btn-danger">Удалить</a>
+                </td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{% if user_role == 'admin' %}11{% else %}10{% endif %}" style="text-align: center;">Заказов пока нет</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
