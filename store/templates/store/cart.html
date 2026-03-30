@@ -8,6 +8,11 @@
         th, td { padding: 15px; border-bottom: 1px solid #ddd; text-align: left; }
         .total { font-size: 1.5em; text-align: right; margin-top: 20px; }
         .back-link { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; }
+        .order-form { background: white; padding: 20px; margin-top: 20px; border-radius: 8px; }
+        select, button { padding: 12px; margin: 10px 0; border-radius: 4px; }
+        select { width: 100%; border: 1px solid #ddd; }
+        .btn-order { background: #4CAF50; color: white; border: none; cursor: pointer; width: 100%; font-size: 16px; }
+        .btn-order:hover { background: #45a049; }
     </style>
 </head>
 <body>
@@ -22,6 +27,7 @@
                 <th>Кол-во</th>
                 <th>Цена</th>
                 <th>Сумма</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -31,14 +37,27 @@
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.product.price }} ₽</td>
                 <td>{{ item.item_total }} ₽</td>
+                <td><a href="{% url 'remove_from_cart' item.product.id %}" style="color: red;">[ Удалить ]</a></td>
             </tr>
-            <td>
-                <a href="{% url 'remove_from_cart' item.product.id %}" style="color: red;">[ Удалить ]</a>
-            </td>
             {% endfor %}
         </tbody>
     </table>
     <div class="total">Итого: <strong>{{ total_price }} ₽</strong></div>
+
+    <div class="order-form">
+        <h3>Оформление заказа</h3>
+        <form method="post" action="{% url 'create_order' %}">
+            {% csrf_token %}
+            <label for="pickup_point"><strong>Выберите пункт выдачи:</strong></label>
+            <select name="pickup_point" id="pickup_point" required>
+                <option value="">-- Выберите пункт выдачи --</option>
+                {% for point in pickup_points %}
+                <option value="{{ point.id }}">{{ point.address }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-order">Заказать</button>
+        </form>
+    </div>
     {% else %}
     <p>Корзина пока пуста.</p>
     {% endif %}

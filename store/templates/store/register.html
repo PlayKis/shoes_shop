@@ -7,7 +7,7 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .form { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 350px; }
         h2 { color: #4CAF50; text-align: center; margin-bottom: 30px; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
         button:hover { background: #45a049; }
         .links { text-align: center; margin-top: 20px; }
@@ -29,11 +29,6 @@
             <input type="password" name="password" placeholder="Пароль" required>
             <input type="text" name="last_name" placeholder="Фамилия">
             <input type="text" name="first_name" placeholder="Имя">
-            <select name="role">
-                <option value="client">Клиент</option>
-                <option value="manager">Менеджер</option>
-                <option value="admin">Администратор</option>
-            </select>
             <button type="submit">Зарегистрироваться</button>
         </form>
         <div class="links">

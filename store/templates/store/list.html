@@ -72,12 +72,12 @@
     
     <div class="user-panel">
         {% if user.is_authenticated %}
-            <span>{{ user_full_name }}</span> | <a href="{% url 'logout' %}">Выход</a>
+            <span>{{ user_full_name }}</span> | <a href="{% url 'order_history' %}">Мои заказы</a> | <a href="{% url 'logout' %}">Выход</a>
         {% else %}
             <span>Гость</span> | <a href="{% url 'login' %}">Войти</a> | <a href="{% url 'register' %}">Регистрация</a>
         {% endif %}
         <br>
-        <b>Товаров в корзине: {{ cart_count }}</b>
+        <b>Товаров в корзине: <a href="{% url 'cart_detail' %}">{{ cart_count }}</a></b>
     </div>
 </div>
 

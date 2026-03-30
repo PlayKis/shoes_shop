@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Q
 from django.core.paginator import Paginator
-from .models import Product, Order, UserProfile, Category, Supplier
+from .models import Product, Order, OrderItem, UserProfile, Category, Supplier, PickupPoint
 
 
 def get_user_role(user):
@@ -97,14 +97,13 @@ def register_view(request):
         password = request.POST.get('password')
         first_name = request.POST.get('first_name', '')
         last_name = request.POST.get('last_name', '')
-        role = request.POST.get('role', 'client')
 
         if User.objects.filter(username=username).exists():
             messages.error(request, 'Пользователь с таким логином уже существует')
             return redirect('register')
 
         user = User.objects.create_user(username=username, password=password, first_name=first_name, last_name=last_name)
-        UserProfile.objects.create(user=user, role=role)
+        UserProfile.objects.create(user=user, role='client')
         login(request, user)
         return redirect('product_list')
 
@@ -272,14 +271,19 @@ def order_create(request):
 
             order = Order(
                 article=request.POST.get('article') or None,
-                product=product,
-                quantity=request.POST.get('quantity', 1),
                 status=request.POST.get('status', 'pending'),
                 pickup_address=request.POST.get('pickup_address'),
                 issue_date=request.POST.get('issue_date') or None,
                 customer=customer
             )
             order.save()
+            
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=request.POST.get('quantity', 1)
+            )
+            
             messages.success(request, 'Заказ успешно создан')
             return redirect('order_list')
         except Exception as e:
@@ -305,14 +309,23 @@ def order_edit(request, pk):
     if request.method == 'POST':
         try:
             order.article = request.POST.get('article') or None
-            order.product_id = request.POST.get('product')
-            order.quantity = request.POST.get('quantity', 1)
             order.status = request.POST.get('status', 'pending')
             order.pickup_address = request.POST.get('pickup_address')
             customer_id = request.POST.get('customer')
             order.customer = User.objects.get(pk=customer_id) if customer_id else None
             order.issue_date = request.POST.get('issue_date') or None
             order.save()
+            
+            item_product_id = request.POST.get('product')
+            item_quantity = request.POST.get('quantity', 1)
+            if item_product_id:
+                order.items.all().delete()
+                OrderItem.objects.create(
+                    order=order,
+                    product_id=item_product_id,
+                    quantity=item_quantity
+                )
+            
             messages.success(request, 'Заказ успешно обновлен')
             return redirect('order_list')
         except Exception as e:
@@ -348,7 +361,10 @@ def add_to_cart(request, product_id):
     p_id = str(product_id)
     cart[p_id] = cart.get(p_id, 0) + 1
     request.session['cart'] = cart
-    return redirect(request.META.get('HTTP_REFERER', 'product_list'))
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('product_list')
 
 
 def remove_from_cart(request, product_id):
@@ -380,5 +396,50 @@ def cart_detail(request):
 
     return render(request, 'store/cart.html', {
         'cart_items': cart_items,
-        'total_price': total_price
+        'total_price': total_price,
+        'pickup_points': PickupPoint.objects.all()
     })
+
+
+def create_order(request):
+    if request.method == 'POST':
+        pickup_point_id = request.POST.get('pickup_point')
+        pickup_point = get_object_or_404(PickupPoint, pk=pickup_point_id)
+        
+        cart = request.session.get('cart', {})
+        customer = request.user if request.user.is_authenticated else None
+        
+        if not cart:
+            messages.error(request, 'Корзина пуста')
+            return redirect('cart_detail')
+        
+        order = Order.objects.create(
+            pickup_address=pickup_point.address,
+            customer=customer
+        )
+        
+        for product_id, quantity in cart.items():
+            try:
+                product = Product.objects.get(pk=product_id)
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=quantity
+                )
+            except Product.DoesNotExist:
+                pass
+        
+        request.session['cart'] = {}
+        messages.success(request, 'Заказ успешно оформлен!')
+        return redirect('product_list')
+    
+    return redirect('cart_detail')
+
+
+def order_history(request):
+    if not request.user.is_authenticated:
+        messages.error(request, 'Войдите для просмотра истории заказов')
+        return redirect('login')
+    
+    orders = Order.objects.filter(customer=request.user).order_by('-order_date')
+    return render(request, 'store/order_history.html', {'orders': orders})

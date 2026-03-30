@@ -33,6 +33,13 @@ class Category(models.Model):
         return self.name
 
 
+class PickupPoint(models.Model):
+    address = models.CharField(max_length=255, unique=True, verbose_name="Адрес пункта выдачи")
+
+    def __str__(self):
+        return self.address
+
+
 class Product(models.Model):
     UNIT_CHOICES = [
         ('шт.', 'шт.'),
@@ -54,7 +61,7 @@ class Product(models.Model):
     @property
     def final_price(self):
         if self.discount > 0:
-            return float(self.price) * (1 - self.discount / 100)
+            return round(float(self.price) * (1 - self.discount / 100), 2)
         return float(self.price)
 
     @property
@@ -81,8 +88,6 @@ class Order(models.Model):
         ('cancelled', 'Отменен'),
     ]
     article = models.CharField(max_length=50, unique=True, blank=True, null=True, verbose_name="Артикул")
-    product = models.ForeignKey(Product, on_delete=models.PROTECT, verbose_name="Товар")
-    quantity = models.IntegerField(default=1, verbose_name="Количество")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="Статус заказа")
     pickup_address = models.CharField(max_length=255, verbose_name="Адрес пункта выдачи")
     order_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата заказа")
@@ -91,4 +96,14 @@ class Order(models.Model):
 
     @property
     def total_price(self):
+        return sum(float(item.product.final_price) * item.quantity for item in self.items.all())
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, verbose_name="Товар")
+    quantity = models.IntegerField(default=1, verbose_name="Количество")
+
+    @property
+    def item_total(self):
         return float(self.product.final_price) * self.quantity

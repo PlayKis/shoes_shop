@@ -33,7 +33,7 @@
                 <select name="product" required>
                     <option value="">-- Выберите товар --</option>
                     {% for prod in products %}
-                    <option value="{{ prod.id }}" {% if order.product_id == prod.id %}selected{% endif %}>
+                    <option value="{{ prod.id }}" {% if order.items.first.product_id == prod.id %}selected{% endif %}>
                         {{ prod.sku }} - {{ prod.title }} ({{ prod.final_price|floatformat:2 }} ₽)
                     </option>
                     {% endfor %}
@@ -42,7 +42,7 @@
             
             <div class="form-group">
                 <label>Количество *</label>
-                <input type="number" name="quantity" min="1" value="{{ order.quantity|default:'1' }}" required>
+                <input type="number" name="quantity" min="1" value="{{ order.items.first.quantity|default:'1' }}" required>
             </div>
             
             <div class="form-group">

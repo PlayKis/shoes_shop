@@ -9,19 +9,21 @@
         .logo img { vertical-align: middle; }
         .logo span { font-size: 1.5em; font-weight: bold; margin-left: 10px; }
         .user-panel { text-align: right; }
-        table { width: 100%; border-collapse: collapse; padding: 20px; }
-        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
-        th { background: #4CAF50; color: white; }
-        tr:nth-child(even) { background: #f9f9f9; }
-        .btn { padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px; }
+        .order-card { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; overflow: hidden; }
+        .order-header { background: #f5f5f5; padding: 12px 15px; display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; }
+        .order-items { padding: 10px 15px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.9em; }
+        th { background: #f9f9f9; color: #666; }
+        .btn { padding: 6px 12px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 3px; }
         .btn-primary { background: #4CAF50; color: white; }
         .btn-danger { background: #f44336; color: white; }
         .btn-secondary { background: #2196F3; color: white; }
-        .status-pending { color: orange; }
-        .status-processing { color: blue; }
-        .status-ready { color: green; }
-        .status-completed { color: #4CAF50; }
-        .status-cancelled { color: red; }
+        .status-pending { color: orange; font-weight: bold; }
+        .status-processing { color: blue; font-weight: bold; }
+        .status-ready { color: green; font-weight: bold; }
+        .status-completed { color: #4CAF50; font-weight: bold; }
+        .status-cancelled { color: red; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -44,50 +46,54 @@
         <a href="{% url 'product_list' %}" class="btn btn-secondary">Назад к товарам</a>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Артикул</th>
-                <th>Товар</th>
-                <th>Количество</th>
-                <th>Сумма</th>
-                <th>Статус</th>
-                <th>Адрес пункта выдачи</th>
-                <th>Дата заказа</th>
-                <th>Дата выдачи</th>
-                <th>Покупатель</th>
-                {% if user_role == 'admin' %}
-                <th>Действия</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for order in orders %}
-            <tr>
-                <td>{{ order.id }}</td>
-                <td>{{ order.article|default:"-" }}</td>
-                <td>{{ order.product.title }}</td>
-                <td>{{ order.quantity }}</td>
-                <td>{{ order.total_price|floatformat:2 }} ₽</td>
-                <td class="status-{{ order.status }}">{{ order.get_status_display }}</td>
-                <td>{{ order.pickup_address }}</td>
-                <td>{{ order.order_date|date:"d.m.Y H:i" }}</td>
-                <td>{{ order.issue_date|date:"d.m.Y"|default:"-" }}</td>
-                <td>{{ order.customer|default:"Гость" }}</td>
-                {% if user_role == 'admin' %}
-                <td>
-                    <a href="{% url 'order_edit' order.id %}" target="_blank" class="btn btn-primary">Редактировать</a>
-                    <a href="{% url 'order_delete' order.id %}" class="btn btn-danger">Удалить</a>
-                </td>
-                {% endif %}
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="{% if user_role == 'admin' %}11{% else %}10{% endif %}" style="text-align: center;">Заказов пока нет</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div style="padding: 20px;">
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-header">
+                <div>
+                    <strong>Заказ #{{ order.id }}</strong>
+                    {% if order.article %} | Артикул: {{ order.article }}{% endif %}
+                    | Покупатель: {{ order.customer|default:"Гость" }}
+                </div>
+                <div>
+                    <span>Статус: <span class="status-{{ order.status }}">{{ order.get_status_display }}</span></span>
+                    | <span>Пункт: {{ order.pickup_address }}</span>
+                    | <span>{{ order.order_date|date:"d.m.Y H:i" }}</span>
+                    {% if user_role == 'admin' %}
+                    | <a href="{% url 'order_edit' order.id %}" target="_blank" class="btn btn-primary">Ред.</a>
+                    <a href="{% url 'order_delete' order.id %}" class="btn btn-danger">Удал.</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="order-items">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Товар</th>
+                            <th>Кол-во</th>
+                            <th>Цена</th>
+                            <th>Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>{{ item.product.brand }} {{ item.product.title }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.product.final_price|floatformat:2 }} ₽</td>
+                            <td>{{ item.item_total|floatformat:2 }} ₽</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div style="text-align: right; padding-top: 10px; font-weight: bold;">
+                    Итого: {{ order.total_price|floatformat:2 }} ₽
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p>Заказов пока нет.</p>
+        {% endfor %}
+    </div>
 </body>
 </html>
